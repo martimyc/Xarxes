@@ -21,27 +21,20 @@ int main(int argc, char** argv)
 
 	SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
 
-	sockaddr_in bindAddr;
-	bindAddr.sin_family = AF_INET; // IPv4
-	bindAddr.sin_port = htons(PORT); //Port
+	sockaddr_in remoteAddr;
+	remoteAddr.sin_family = AF_INET; // IPv4
+	remoteAddr.sin_port = htons(PORT); //Port
 	const char *remoteAddrStr = "127.0.0.1"; // Not so remote… :-P
-	inet_pton(AF_INET, remoteAddrStr, &bindAddr.sin_addr);
-
-	/*int enable = 1;
-	int res = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&enable, sizeof(int));
-	if (res == SOCKET_ERROR) {
-		OutputDebugString("Can not reuse socket");
-	}
-
-	int res = bind(s, (const sockaddr *)&bindAddr, sizeof(bindAddr));	*/	const char buf [5] = "Ping";	char* recived_buf = nullptr;
+	inet_pton(AF_INET, remoteAddrStr, &remoteAddr.sin_addr);
+	const char buf [5] = "Ping";	char* recived_buf = nullptr;
 	int recived_len = 0;
 
-	sockaddr_in recivedAddr = bindAddr;
+	sockaddr_in recivedAddr = remoteAddr;
 	int recived_addr_len = sizeof(sockaddr_in);
 
 	for (int i = 0; i < 5; i++)
 	{
-		sendto(s, buf, 5, 0, (const sockaddr *)&bindAddr, sizeof(bindAddr));
+		sendto(s, buf, 5, 0, (const sockaddr *)&remoteAddr, sizeof(remoteAddr));
 		recvfrom(s, recived_buf, recived_len, 0, (sockaddr *)&recivedAddr, &recived_addr_len);
 	}
 
