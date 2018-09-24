@@ -25,8 +25,6 @@ int main(int argc, char** argv)
 	bindAddr.sin_family = AF_INET; // IPv4
 	bindAddr.sin_port = htons(PORT); //Port
 	bindAddr.sin_addr.S_un.S_addr = INADDR_ANY;
-	const char *remoteAddrStr = "127.0.0.1"; // Not so remote… :-P
-	inet_pton(AF_INET, remoteAddrStr, &bindAddr.sin_addr);
 
 	int enable = 1;
 	int res = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&enable, sizeof(int));

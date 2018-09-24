@@ -21,17 +21,17 @@ int main(int argc, char** argv)
 
 	SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
 
-	sockaddr_in bindAddr;
-	bindAddr.sin_family = AF_INET; // IPv4
-	bindAddr.sin_port = htons(PORT); //Port
+	sockaddr_in remoteAddr;
+	remoteAddr.sin_family = AF_INET; // IPv4
+	remoteAddr.sin_port = htons(PORT); //Port
 	const char *remoteAddrStr = "127.0.0.1"; // Not so remote… :-P
-	inet_pton(AF_INET, remoteAddrStr, &bindAddr.sin_addr);	const char buf[5] = "Ping";	char* recived_buf = nullptr;
+	inet_pton(AF_INET, remoteAddrStr, &remoteAddr.sin_addr);	const char buf[5] = "Ping";	char* recived_buf = nullptr;
 	int recived_len = 0;
 
-	sockaddr_in recivedAddr = bindAddr;
+	sockaddr_in recivedAddr = remoteAddr;
 	int recived_addr_len = sizeof(sockaddr_in);
 
-	connect( s, (const sockaddr *)&bindAddr, sizeof(bindAddr));
+	connect( s, (const sockaddr *)&remoteAddr, sizeof(remoteAddr));
 
 	for (int i = 0; i < 5; i++)
 	{
