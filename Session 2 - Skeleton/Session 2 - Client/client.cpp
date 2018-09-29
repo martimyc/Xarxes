@@ -34,6 +34,23 @@ void handleIncomingData()
 
 	// Call recv
 
+	int bytesRecv = recv( g_Socket, inputBuffer, inputBufferLen, 0);
+
+	if (bytesRecv == SOCKET_ERROR) {
+		int lastError = WSAGetLastError();
+
+		if (lastError == WSAECONNRESET) {
+			std::cout << "server was closed" << std::endl;
+			g_End = true;
+		}
+	}
+	else if (bytesRecv == 0) {
+		g_End = true;
+	}
+	else {
+		std::cout << inputBuffer;
+	}
+
 	// Handle errors
 	// - WSAEWOULDBLOCK (do nothing)
 	// - WSAECONNRESET (server was closed, so finish application, g_End = true)
@@ -52,6 +69,16 @@ void handleOutgoingData()
 	// TODO:
 
 	// Call send
+	int bytesSend = send(g_Socket, outputBuffer, outputBufferLen, 0);
+
+	if (bytesSend == SOCKET_ERROR) {
+		int lastError = WSAGetLastError();
+
+		if (lastError == WSAECONNRESET) {
+			std::cout << "client disconnected forcibly" << std::endl;
+			g_End = true;
+		}
+	}
 
 	// Handle errors
 	// - WSAEWOULDBLOCK (do nothing)
@@ -84,7 +111,12 @@ void client(const char *serverAddressStr, int port)
 	}
 	
 	// Set non-blocking socket
-	// TODO
+	u_long nonBlocking = 1;
+	res = ioctlsocket(g_Socket, FIONBIO, &nonBlocking);
+	if (res == SOCKET_ERROR) {
+		std::cout << "Socker error: " << res;
+		g_End = true;
+	}
 
 	// Loop
 	while (!g_End)

@@ -32,15 +32,24 @@ void handleIncomingData()
 	char inputBuffer[inputBufferLen];
 
 	// Create a new socket set
-	// TODO
+	fd_set readSet;
+	FD_ZERO(&readSet);
 
 	// Fill the set
 	for (auto s : sockets) {
-		// TODO
+		FD_SET(s, &readSet);
 	}
 
+	// Timeout (return immediately)
+	timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+
 	// Call select
-	// TODO
+	int res = select(0, &readSet, nullptr, nullptr, &timeout);
+	if (res == SOCKET_ERROR) {
+		logSocketErrorAndExit("select 4 read");
+	}
 
 	// List to mark disconnected sockets
 	std::list<SOCKET> disconnectedSockets;
@@ -49,23 +58,40 @@ void handleIncomingData()
 	for (auto s : sockets)
 	{
 		// Check if s is ready for read
-		if (...) {
+		if (FD_ISSET(s, &readSet)) {
 
 			// Is the server socket ?
-			if (...) {
+			if (s == serverSocket) {
 				// Accept a new connection
-				// TODO
+				sockaddr* new_s_addr = nullptr;
+				int* new_s_addr_len = nullptr;
+				SOCKET new_s = accept(s, new_s_addr, new_s_addr_len);
 
 				// Add the new socket to our list sockets
-				// TODO
+				sockets.push_back(new_s);
 			}
 
 			// Is a client socket
 			else {
 
 				// Call recv
-				// TODO
+				int bytesRecv = recv(s, inputBuffer, inputBufferLen, 0);
 
+				if (bytesRecv == SOCKET_ERROR) {
+					int lastError = WSAGetLastError();
+
+					if (lastError == WSAECONNRESET){
+						std::cout << "client disconnected forcibly" << std::endl;
+						disconnectedSockets.push_back(s);
+					}					
+				}
+				else if (bytesRecv == 0) {
+					disconnectedSockets.push_back(s);
+				}
+				else {
+					std::cout << inputBuffer;
+				}
+				
 				// Handle errors
 				// - WSAEWOULDBLOCK (do nothing)
 				// - WSAECONNRESET (client disconnected forcibly, so insert s into disconnectedSockets)
@@ -90,15 +116,24 @@ void handleOutgoingData()
 	const int outputBufferLen = strlen(outputBuffer) + 1;
 
 	// Create a new socket set
-	// TODO
+	fd_set writeSet;
+	FD_ZERO(&writeSet);
 
 	// Fill the set
 	for (auto s : sockets) {
-		// TODO
+		FD_SET(s, &writeSet);
 	}
 
+	// Timeout (return immediately)
+	timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+
 	// Call select
-	// TODO
+	int res = select(0, nullptr, &writeSet, nullptr, &timeout);
+	if (res == SOCKET_ERROR) {
+		logSocketErrorAndExit("select 4 read");
+	}
 
 	// List to mark disconnected sockets
 	std::list<SOCKET> disconnectedSockets;
@@ -107,11 +142,20 @@ void handleOutgoingData()
 	for (auto s : sockets)
 	{
 		// Check if s is ready for send
-		if (...) {
+		if (FD_ISSET(s, &writeSet)) {
 
 			// TODO:
-
+			int bytesSend = send(s, outputBuffer, outputBufferLen, 0);
 			// Call send
+
+			if (bytesSend == SOCKET_ERROR) {
+				int lastError = WSAGetLastError();
+
+				if (lastError == WSAECONNRESET) {
+					std::cout << "client disconnected forcibly"<< std::endl;					
+					disconnectedSockets.push_back(s);
+				}
+			}
 
 			// Handle errors
 			// - WSAEWOULDBLOCK (do nothing)
