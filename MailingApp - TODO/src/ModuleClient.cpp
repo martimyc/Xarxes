@@ -87,9 +87,33 @@ void ModuleClient::onPacketReceivedQueryAllMessagesResponse(const InputMemoryStr
 
 	uint32_t messageCount;
 	// TODO: Deserialize the number of messages
+	stream.Read(messageCount);
+	messages.reserve(messageCount);
 
 	// TODO: Deserialize messages one by one and push_back them into the messages vector
 	// NOTE: The messages vector is an attribute of this class
+
+	Message mss;
+
+	for (unsigned int i = 0; i < messageCount; i++)
+	{
+		stream.Read(mss.senderUsername);
+		stream.Read(mss.receiverUsername);
+		stream.Read(mss.subject);
+		stream.Read(mss.body);
+
+		bool isBlocked = false;
+
+		for (std::vector<std::string>::const_iterator it = blocked.begin(); it != blocked.end() && isBlocked == false; ++it)
+			if (*it == mss.senderUsername)
+			{
+				isBlocked = true;
+				break;
+			}		
+		
+		if(!isBlocked)
+			messages.push_back(mss);
+	}
 
 	messengerState = MessengerState::ShowingMessages;
 }
@@ -99,8 +123,13 @@ void ModuleClient::sendPacketLogin(const char * username)
 	OutputMemoryStream stream;
 
 	// TODO: Serialize Login (packet type and username)
+	stream.Write(PacketType::LoginRequest);
+	std::string str(username);
+	stream.Write(str);
 
 	// TODO: Use sendPacket() to send the packet
+
+	sendPacket(stream);
 
 	messengerState = MessengerState::RequestingMessages;
 }
@@ -110,8 +139,10 @@ void ModuleClient::sendPacketQueryMessages()
 	OutputMemoryStream stream;
 
 	// TODO: Serialize message (only the packet type)
+	stream.Write(PacketType::QueryAllMessagesRequest);
 
 	// TODO: Use sendPacket() to send the packet
+	sendPacket(stream);
 
 	messengerState = MessengerState::ReceivingMessages;
 }
@@ -122,8 +153,20 @@ void ModuleClient::sendPacketSendMessage(const char * receiver, const char * sub
 
 	// TODO: Serialize message (packet type and all fields in the message)
 	// NOTE: remember that senderBuf contains the current client (i.e. the sender of the message)
+	stream.Write(PacketType::SendMessageRequest);
+
+	std::string send(senderBuf);
+	std::string rec(receiver);
+	std::string sub(subject);
+	std::string mss(message);
+
+	stream.Write(send);
+	stream.Write(rec);
+	stream.Write(sub);
+	stream.Write(mss);
 
 	// TODO: Use sendPacket() to send the packet
+	sendPacket(stream);
 
 	messengerState = MessengerState::RequestingMessages;
 }
@@ -147,6 +190,7 @@ void ModuleClient::updateGUI()
 {
 	ImGui::Begin("Client Window");
 
+	ImGui::Text(senderBuf);
 
 	if (state == ClientState::Disconnected)
 	{
@@ -181,6 +225,13 @@ void ModuleClient::updateGUI()
 			{
 				state = ClientState::Disconnecting;
 			}
+		}
+
+		ImGui::InputText(" ", blockInputBuffer, 255);
+
+		if (ImGui::Button("Block")) {
+			blocked.push_back(std::string(blockInputBuffer));
+			memset(blockInputBuffer, 0, sizeof(blockInputBuffer));
 		}
 
 		if (messengerState == MessengerState::ComposingMessage)
@@ -225,6 +276,14 @@ void ModuleClient::updateGUI()
 					ImGui::TreePop();
 				}
 				ImGui::PopID();
+			}
+		}
+
+		if (ImGui::CollapsingHeader("Blocked")) {
+			for (std::vector<std::string>::const_iterator it = blocked.begin(); it != blocked.end(); ++it)
+			{
+				if (ImGui::TreeNodeEx(it->c_str(), ImGuiTreeNodeFlags_Leaf))
+					ImGui::TreePop();
 			}
 		}
 	}

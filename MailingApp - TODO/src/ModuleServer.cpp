@@ -61,6 +61,7 @@ void ModuleServer::onPacketReceived(SOCKET socket, const InputMemoryStream & str
 	PacketType packetType;
 
 	// TODO: Deserialize the packet type
+	stream.Read(packetType);
 
 	LOG("onPacketReceived() - packetType: %d", (int)packetType);
 
@@ -85,6 +86,7 @@ void ModuleServer::onPacketReceivedLogin(SOCKET socket, const InputMemoryStream 
 {
 	std::string loginName;
 	// TODO: Deserialize the login username into loginName
+	stream.Read(loginName);
 
 	// Register the client with this socket with the deserialized username
 	ClientStateInfo & client = getClientStateInfoForSocket(socket);
@@ -108,14 +110,36 @@ void ModuleServer::sendPacketQueryAllMessagesResponse(SOCKET socket, const std::
 	// -- serialize the packet type
 	// -- serialize the array size
 	// -- serialize the messages in the array
+	outStream.Write(PacketType::QueryAllMessagesResponse);
+
+	uint32_t num_messages = messages.size();
+	outStream.Write(num_messages);
+
+	for (std::vector<Message>::const_iterator it = messages.begin(); it != messages.end(); ++it)
+	{
+		std::string send(it->senderUsername);
+		std::string rec(it->receiverUsername);
+		std::string sub(it->subject);
+		std::string mss(it->body);
+
+		outStream.Write(send);
+		outStream.Write(rec);
+		outStream.Write(sub);
+		outStream.Write(mss);
+	}
 
 	// TODO: Send the packet (pass the outStream to the sendPacket function)
+	sendPacket(socket,outStream);
 }
 
 void ModuleServer::onPacketReceivedSendMessage(SOCKET socket, const InputMemoryStream & stream)
 {
 	Message message;
 	// TODO: Deserialize the packet (all fields in Message)
+	stream.Read(message.senderUsername);
+	stream.Read(message.receiverUsername);
+	stream.Read(message.subject);
+	stream.Read(message.body);
 
 	// Insert the message in the database
 	database()->insertMessage(message);
@@ -391,7 +415,7 @@ ModuleServer::ClientStateInfo & ModuleServer::getClientStateInfoForSocket(SOCKET
 		}
 	}
 
-	assert(nullptr && "The client for this socket does not exist.");
+	assert(s && "The client for this socket does not exist.");
 }
 
 bool ModuleServer::existsClientStateInfoForSocket(SOCKET s)

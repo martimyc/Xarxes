@@ -106,4 +106,8 @@ private:
 	// Send buffer state
 	size_t sendHead = 0;
 	std::vector<uint8_t> sendBuffer;
+
+	//Blocked users
+	std::vector<std::string> blocked;
+	char blockInputBuffer [255] = "\0";
 };
