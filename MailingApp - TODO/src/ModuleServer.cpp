@@ -76,6 +76,12 @@ void ModuleServer::onPacketReceived(SOCKET socket, const InputMemoryStream & str
 	case PacketType::SendMessageRequest:
 		onPacketReceivedSendMessage(socket, stream);
 		break;
+	case PacketType::Block:
+		onPacketReceivedBlocked(socket, stream);
+		break;
+	case PacketType::Unblock:
+		onPacketReceivedUnblocked(socket, stream);
+		break;
 	default:
 		LOG("Unknown packet type received");
 		break;
@@ -138,11 +144,71 @@ void ModuleServer::onPacketReceivedSendMessage(SOCKET socket, const InputMemoryS
 	// TODO: Deserialize the packet (all fields in Message)
 	stream.Read(message.senderUsername);
 	stream.Read(message.receiverUsername);
-	stream.Read(message.subject);
-	stream.Read(message.body);
 
-	// Insert the message in the database
-	database()->insertMessage(message);
+	for (std::list<ClientStateInfo>::iterator it = clients.begin(); it != clients.end(); ++it)
+	{
+		if (it->loginName == message.receiverUsername)
+		{
+			bool is_blocked = false;
+
+			for (std::vector<std::string>::const_iterator it2 = it->blocked.begin(); it2 != it->blocked.end(); ++it2)
+			{
+				if (message.senderUsername == *it2)
+				{
+					is_blocked = true;
+					break;
+				}
+			}
+
+			if (!is_blocked)
+			{
+				stream.Read(message.subject);
+				stream.Read(message.body);
+
+				// Insert the message in the database
+				database()->insertMessage(message);
+			}
+		}
+	}
+}
+
+void ModuleServer::onPacketReceivedBlocked(SOCKET socket, const InputMemoryStream & stream)
+{
+	std::string blocker_user;
+	std::string blocked_user;
+
+	stream.Read(blocker_user);
+	stream.Read(blocked_user);
+
+	for (std::list<ClientStateInfo>::iterator it = clients.begin(); it != clients.end(); ++it)
+	{
+		if (it->loginName == blocker_user)
+			it->blocked.push_back(blocked_user);
+	}
+}
+
+void ModuleServer::onPacketReceivedUnblocked(SOCKET socket, const InputMemoryStream & stream)
+{
+	std::string user;
+	std::string unblocked_user;
+
+	stream.Read(user);
+	stream.Read(unblocked_user);
+
+	for (std::list<ClientStateInfo>::iterator it = clients.begin(); it != clients.end(); ++it)
+	{
+		if (it->loginName == user)
+		{
+			for (std::vector<std::string>::iterator it2 = it->blocked.begin(); it2 != it->blocked.end(); ++it)
+			{
+				if (*it2 == unblocked_user)
+				{
+					it->blocked.erase(it2);
+					break;
+				}
+			}
+		}			
+	}
 }
 
 void ModuleServer::sendPacket(SOCKET socket, OutputMemoryStream & stream)
@@ -156,7 +222,6 @@ void ModuleServer::sendPacket(SOCKET socket, OutputMemoryStream & stream)
 	//std::copy(stream.GetBufferPtr(), stream.GetBufferPtr() + stream.GetSize(), &client.sendBuffer[oldSize] + HEADER_SIZE);
 	memcpy(&client.sendBuffer[oldSize] + HEADER_SIZE, stream.GetBufferPtr(), stream.GetSize());
 }
-
 
 
 // GUI: Modify this to add extra features...

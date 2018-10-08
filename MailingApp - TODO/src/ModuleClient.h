@@ -31,6 +31,10 @@ private:
 
 	void sendPacketSendMessage(const char *receiver, const char *subject, const char *message);
 
+	void sendPacketBlock(std::string blocked_user);
+
+	void sendPacketUnblock();
+
 	void sendPacket(const OutputMemoryStream &stream);
 
 	
@@ -80,7 +84,9 @@ private:
 		ReceivingMessages,
 		ShowingMessages,
 		ComposingMessage,
-		SendingMessage
+		SendingMessage,
+		Blocking,
+		Unblocking
 	};
 
 	// Current screen of the messenger application
@@ -110,4 +116,5 @@ private:
 	//Blocked users
 	std::vector<std::string> blocked;
 	char blockInputBuffer [255] = "\0";
+	std::string unblocked;
 };

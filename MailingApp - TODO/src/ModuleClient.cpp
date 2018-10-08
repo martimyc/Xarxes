@@ -58,6 +58,12 @@ void ModuleClient::updateMessenger()
 	case ModuleClient::MessengerState::SendingMessage:
 		sendPacketSendMessage(receiverBuf, subjectBuf, messageBuf);
 		break;
+	case ModuleClient::MessengerState::Blocking:
+		sendPacketBlock(blockInputBuffer);
+		break;
+	case ModuleClient::MessengerState::Unblocking:
+		sendPacketUnblock();
+		break;
 	default:
 		break;
 	}
@@ -102,17 +108,7 @@ void ModuleClient::onPacketReceivedQueryAllMessagesResponse(const InputMemoryStr
 		stream.Read(mss.subject);
 		stream.Read(mss.body);
 
-		bool isBlocked = false;
-
-		for (std::vector<std::string>::const_iterator it = blocked.begin(); it != blocked.end() && isBlocked == false; ++it)
-			if (*it == mss.senderUsername)
-			{
-				isBlocked = true;
-				break;
-			}		
-		
-		if(!isBlocked)
-			messages.push_back(mss);
+		messages.push_back(mss);
 	}
 
 	messengerState = MessengerState::ShowingMessages;
@@ -166,6 +162,36 @@ void ModuleClient::sendPacketSendMessage(const char * receiver, const char * sub
 	stream.Write(mss);
 
 	// TODO: Use sendPacket() to send the packet
+	sendPacket(stream);
+
+	messengerState = MessengerState::RequestingMessages;
+}
+
+void ModuleClient::sendPacketBlock(std::string blocked_user)
+{
+	OutputMemoryStream stream;
+
+	stream.Write(PacketType::Block);
+
+	stream.Write(std::string(senderBuf));
+	stream.Write(blocked_user);
+
+	sendPacket(stream);
+
+	memset(blockInputBuffer, 0, sizeof(blockInputBuffer));
+
+	messengerState = MessengerState::RequestingMessages;
+}
+
+void ModuleClient::sendPacketUnblock()
+{
+	OutputMemoryStream stream;
+
+	stream.Write(PacketType::Unblock);
+
+	stream.Write(std::string(senderBuf));
+	stream.Write(unblocked);
+
 	sendPacket(stream);
 
 	messengerState = MessengerState::RequestingMessages;
@@ -231,7 +257,7 @@ void ModuleClient::updateGUI()
 
 		if (ImGui::Button("Block")) {
 			blocked.push_back(std::string(blockInputBuffer));
-			memset(blockInputBuffer, 0, sizeof(blockInputBuffer));
+			messengerState = MessengerState::Blocking;
 		}
 
 		if (messengerState == MessengerState::ComposingMessage)
@@ -284,6 +310,16 @@ void ModuleClient::updateGUI()
 			{
 				if (ImGui::TreeNodeEx(it->c_str(), ImGuiTreeNodeFlags_Leaf))
 					ImGui::TreePop();
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Unblock"))
+				{
+					messengerState = MessengerState::Unblocking;
+					unblocked = *it;
+					blocked.erase(it);
+					break;
+				}
 			}
 		}
 	}

@@ -36,10 +36,13 @@ private:
 	
 	void onPacketReceivedSendMessage(SOCKET socket, const InputMemoryStream& stream);
 
+	void onPacketReceivedBlocked(SOCKET socket, const InputMemoryStream& stream);
+
+	void onPacketReceivedUnblocked(SOCKET socket, const InputMemoryStream& stream);
+
 	void sendPacketQueryAllMessagesResponse(SOCKET socket, const std::string &username);
 
 	void sendPacket(SOCKET socket, OutputMemoryStream& stream);
-
 
 	// GUI
 
@@ -119,6 +122,8 @@ private:
 
 		// bool should it be deleted?
 		bool invalid = false;
+
+		std::vector<std::string> blocked;
 	};
 
 	// List with all connected clients
