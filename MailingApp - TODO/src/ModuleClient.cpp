@@ -55,6 +55,9 @@ void ModuleClient::updateMessenger()
 	case ModuleClient::MessengerState::ComposingMessage:
 		// Idle, do nothing
 		break;
+	case ModuleClient::MessengerState::RequestingLogIn:
+		// Idle, do nothing
+		break;
 	case ModuleClient::MessengerState::SendingMessage:
 		sendPacketSendMessage(receiverBuf, subjectBuf, messageBuf);
 		break;
@@ -80,6 +83,9 @@ void ModuleClient::onPacketReceived(const InputMemoryStream & stream)
 	{
 	case PacketType::QueryAllMessagesResponse:
 		onPacketReceivedQueryAllMessagesResponse(stream);
+		break;
+	case PacketType::LoginInfo:
+		onLogInInfoReceived(stream);
 		break;
 	default:
 		LOG("Unknown packet type received");
@@ -114,6 +120,26 @@ void ModuleClient::onPacketReceivedQueryAllMessagesResponse(const InputMemoryStr
 	messengerState = MessengerState::ShowingMessages;
 }
 
+void ModuleClient::onLogInInfoReceived(const InputMemoryStream & stream)
+{
+	size_t num_blocked;
+
+	stream.Read(num_blocked);
+
+	if (num_blocked != 0)
+	{
+		std::string block;
+
+		for (int i = 0; i < num_blocked; i++)
+		{
+			stream.Read(block);
+			blocked.push_back(block);
+		}
+	}
+
+	messengerState = MessengerState::RequestingMessages;
+}
+
 void ModuleClient::sendPacketLogin(const char * username)
 {
 	OutputMemoryStream stream;
@@ -127,7 +153,7 @@ void ModuleClient::sendPacketLogin(const char * username)
 
 	sendPacket(stream);
 
-	messengerState = MessengerState::RequestingMessages;
+	messengerState = MessengerState::RequestingLogIn;
 }
 
 void ModuleClient::sendPacketQueryMessages()

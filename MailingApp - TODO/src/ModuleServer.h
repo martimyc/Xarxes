@@ -42,6 +42,8 @@ private:
 
 	void sendPacketQueryAllMessagesResponse(SOCKET socket, const std::string &username);
 
+	void sendPacketLoginInfo(SOCKET socket, const std::vector<std::string> blocked_clients);
+
 	void sendPacket(SOCKET socket, OutputMemoryStream& stream);
 
 	// GUI

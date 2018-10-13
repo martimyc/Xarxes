@@ -72,9 +72,9 @@ DBResultSet DBConnection::sql(const char *query, ...)
 		return resultSet;
 	}
 
-
 	//output
 	LOG("Executing SQL query: %s", query);
+	printf("Executing SQL query: %s", query);
 
 	//if there is a problem executing the query then exit application
 	//else display query result

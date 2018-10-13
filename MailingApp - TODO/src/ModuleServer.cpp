@@ -8,10 +8,8 @@
 
 static bool g_SimulateDatabaseConnection = true;
 
-
 #define HEADER_SIZE sizeof(uint32_t)
 #define RECV_CHUNK_SIZE 4096
-
 
 ModuleServer::ModuleServer()
 {
@@ -94,9 +92,30 @@ void ModuleServer::onPacketReceivedLogin(SOCKET socket, const InputMemoryStream 
 	// TODO: Deserialize the login username into loginName
 	stream.Read(loginName);
 
+	if (loginName == "null")
+	{
+		printf("Can not add client named 'null'");
+		return;
+	}
+
 	// Register the client with this socket with the deserialized username
 	ClientStateInfo & client = getClientStateInfoForSocket(socket);
 	client.loginName = loginName;
+
+	IDatabaseGateway::Client user = database()->getClientInfo(loginName);
+
+	if(user.name == "null")
+		database()->insertClient(loginName);
+	else
+	{
+		for (int i = 0; i < 5; i++)
+		{
+			if(user.blocked[i] != "null")
+				client.blocked.push_back(user.blocked[i]);
+		}
+	}
+
+	sendPacketLoginInfo(socket, client.blocked);
 }
 
 void ModuleServer::onPacketReceivedQueryAllMessages(SOCKET socket, const InputMemoryStream & stream)
@@ -136,6 +155,23 @@ void ModuleServer::sendPacketQueryAllMessagesResponse(SOCKET socket, const std::
 
 	// TODO: Send the packet (pass the outStream to the sendPacket function)
 	sendPacket(socket,outStream);
+}
+
+void ModuleServer::sendPacketLoginInfo(SOCKET socket, const std::vector<std::string> blocked_clients)
+{
+	OutputMemoryStream outStream;
+
+	outStream.Write(PacketType::LoginInfo);
+
+	outStream.Write(blocked_clients.size());
+
+	for (std::vector<std::string>::const_iterator it = blocked_clients.begin(); it != blocked_clients.end(); ++it)
+	{
+		outStream.Write(*it);
+	}
+
+	// TODO: Send the packet (pass the outStream to the sendPacket function)
+	sendPacket(socket, outStream);
 }
 
 void ModuleServer::onPacketReceivedSendMessage(SOCKET socket, const InputMemoryStream & stream)
@@ -185,6 +221,8 @@ void ModuleServer::onPacketReceivedBlocked(SOCKET socket, const InputMemoryStrea
 		if (it->loginName == blocker_user)
 			it->blocked.push_back(blocked_user);
 	}
+
+	database()->blockClient(blocker_user, blocked_user);
 }
 
 void ModuleServer::onPacketReceivedUnblocked(SOCKET socket, const InputMemoryStream & stream)
@@ -209,6 +247,8 @@ void ModuleServer::onPacketReceivedUnblocked(SOCKET socket, const InputMemoryStr
 			}
 		}			
 	}
+
+	database()->unblockClient(user, unblocked_user);
 }
 
 void ModuleServer::sendPacket(SOCKET socket, OutputMemoryStream & stream)

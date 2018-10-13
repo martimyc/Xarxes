@@ -25,6 +25,8 @@ private:
 
 	void onPacketReceivedQueryAllMessagesResponse(const InputMemoryStream &stream);
 
+	void onLogInInfoReceived(const InputMemoryStream &stream);
+
 	void sendPacketLogin(const char *username);
 
 	void sendPacketQueryMessages();
@@ -75,11 +77,11 @@ private:
 	// Socket to connect to the server
 	SOCKET connSocket;
 
-
 	// Current screen of the messenger app
 	enum class MessengerState
 	{
 		SendingLogin,
+		RequestingLogIn,
 		RequestingMessages,
 		ReceivingMessages,
 		ShowingMessages,
