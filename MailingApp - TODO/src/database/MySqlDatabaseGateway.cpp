@@ -38,16 +38,20 @@ IDatabaseGateway::Client MySqlDatabaseGateway::getClientInfo(const std::string c
 
 	if (db.isConnected())
 	{
-		std::string sqlStatement("SELECT * FROM martimy.Clients WHERE idClients = '" + client + "';");
+		std::string sqlStatement("SELECT * FROM "+ std::string(bufMySqlDatabase) +".Clients WHERE idClient = '" + client + "';");
 		DBResultSet res = db.sql(sqlStatement.c_str());
 
 		if (!res.rows.empty())
 		{
 			query_client.name = res.rows[0].columns[0];
-			
-			for (int i = 0; i < 5; i++)
+
+			std::string blocked_list(res.rows[0].columns[1]);
+
+			if (blocked_list != "null")
 			{
-				query_client.blocked[i] = res.rows[0].columns[i+1];
+				//Split string into substringd for each blocked.
+				for (size_t end_pos = blocked_list.find_first_of(","), start_pos = 0; start_pos != std::string::npos; (end_pos == std::string::npos ? start_pos = std::string::npos : start_pos = end_pos + 1), end_pos = blocked_list.substr(start_pos + 1).find_first_of(","))
+					query_client.blocked.push_back(blocked_list.substr(start_pos, end_pos));
 			}
 		}
 	}
@@ -65,7 +69,7 @@ void MySqlDatabaseGateway::insertMessage(const Message & message)
 		std::string sqlStatement;
 		// TODO: Create the SQL statement to insert the passed message into the DB (INSERT)
 
-		sqlStatement = "INSERT martimy.Messages VALUES ('" + message.receiverUsername + "', '" + message.senderUsername + "', '" + message.subject + "', '" + message.body + "');";
+		sqlStatement = "INSERT " + std::string(bufMySqlDatabase) + ".Messages VALUES ('" + message.receiverUsername + "', '" + message.senderUsername + "', '" + message.subject + "', '" + message.body + "');";
 
 		// insert some messages
 		db.sql(sqlStatement.c_str());
@@ -78,13 +82,20 @@ void MySqlDatabaseGateway::insertClient(const std::string client)
 
 	if (db.isConnected() && client != "null" && client != "")
 	{
-		DBResultSet res;
-
-		std::string sqlStatement;
+		std::string sqlStatement("SELECT * FROM " + std::string(bufMySqlDatabase) + ".Clients WHERE idClient = '" + client + "';");
+		DBResultSet res = db.sql(sqlStatement.c_str());
 		
-		sqlStatement = "INSERT martimy.Clients VALUES ('" + client + "', 'null','null','null','null','null');";
+		if (!res.rows.empty())
+		{		
+			printf("Client already created");
+			return;
+		}
+		
+		std::string sqlStatement2;
+		
+		sqlStatement2 = "INSERT " + std::string(bufMySqlDatabase) + ".Clients VALUES ('" + client + "', 'null');";
 
-		db.sql(sqlStatement.c_str());
+		db.sql(sqlStatement2.c_str());
 	}
 }
 
@@ -94,24 +105,15 @@ void MySqlDatabaseGateway::blockClient(const std::string client, const std::stri
 
 	if (db.isConnected() && client != "null" && client != "" && blocked != "null" && blocked != "")
 	{
-		std::string sqlStatement("SELECT * FROM martimy.Clients WHERE idClients = '" + client + "';");
+		std::string sqlStatement("SELECT * FROM " + std::string(bufMySqlDatabase) + ".Clients WHERE idClient = '" + client + "';");
 		DBResultSet res = db.sql(sqlStatement.c_str());
 
-		for (auto & b : res.rows)
-		{
-			if (b.columns[1] == "null")
-				sqlStatement = "UPDATE martimy.Clients SET Blocked1 = '" + blocked + "' WHERE idClients = '" + client + "';";
-			else if (b.columns[2] == "null")
-				sqlStatement = "UPDATE martimy.Clients SET Blocked2 = '" + blocked + "' WHERE idClients = '" + client + "';";
-			else if (b.columns[3] == "null")
-				sqlStatement = "UPDATE martimy.Clients SET Blocked3 = '" + blocked + "' WHERE idClients = '" + client + "';";
-			else if (b.columns[4] == "null")
-				sqlStatement = "UPDATE martimy.Clients SET Blocked4 = '" + blocked + "' WHERE idClients = '" + client + "';";
-			else if (b.columns[4] == "null")
-				sqlStatement = "UPDATE martimy.Clients SET Blocked5 = '" + blocked + "' WHERE idClients = '" + client + "';";
-			else
-				printf("Allready blocked 5 Clients");
-		}
+		std::string blocked_list(res.rows[0].columns[1]);
+		
+		if(blocked_list != "null")
+			sqlStatement = "UPDATE " + std::string(bufMySqlDatabase) + ".Clients SET Blocked = '" + blocked_list + "," + blocked + "' WHERE idClient = '" + client + "';";
+		else
+			sqlStatement = "UPDATE " + std::string(bufMySqlDatabase) + ".Clients SET Blocked = '" + blocked + "' WHERE idClient = '" + client + "';";
 
 		// insert some messages
 		db.sql(sqlStatement.c_str());
@@ -124,24 +126,28 @@ void MySqlDatabaseGateway::unblockClient(const std::string client, const std::st
 
 	if (db.isConnected() && client != "null" && client != "" && unblocked != "null" && unblocked != "")
 	{
-		std::string sqlStatement("SELECT * FROM martimy.Clients WHERE idClients = '" + client + "';");
+		std::string sqlStatement("SELECT * FROM " + std::string(bufMySqlDatabase) + ".Clients WHERE idClient = '" + client + "';");
 		DBResultSet res = db.sql(sqlStatement.c_str());
 
-		for (auto & b : res.rows)
+		std::string blocked_list(res.rows[0].columns[1]);
+
+		if (blocked_list == "null")
 		{
-			if (b.columns[1] == unblocked)
-				sqlStatement = "UPDATE martimy.Clients SET Blocked1 = 'null' WHERE idClients = '" + client + "';";
-			else if (b.columns[2] == unblocked)
-				sqlStatement = "UPDATE martimy.Clients SET Blocked2 = 'null' WHERE idClients = '" + client + "';";
-			else if (b.columns[3] == unblocked)
-				sqlStatement = "UPDATE martimy.Clients SET Blocked3 = 'null' WHERE idClients = '" + client + "';";
-			else if (b.columns[4] == unblocked)
-				sqlStatement = "UPDATE martimy.Clients SET Blocked4 = 'null' WHERE idClients = '" + client + "';";
-			else if (b.columns[4] == unblocked)
-				sqlStatement = "UPDATE martimy.Clients SET Blocked5 = 'null' WHERE idClients = '" + client + "';";
-			else
-				printf("Client was not blocked");
+			printf("There are no blocked users to unblock");
+			return;
 		}
+
+		std::string new_list;
+
+		//Split string into substringd for each blocked.
+		for (size_t end_pos = blocked_list.find_first_of(","), start_pos = 0; start_pos != std::string::npos; (end_pos == std::string::npos ? start_pos = std::string::npos : start_pos = end_pos + 1), end_pos = blocked_list.substr(start_pos + 1).find_first_of(","))
+		{
+			std::string str(blocked_list.substr(start_pos, end_pos));
+			if(str != unblocked)
+				new_list += str;
+		}
+
+		sqlStatement = "UPDATE " + std::string(bufMySqlDatabase) + ".Clients SET Blocked = '" + new_list + "' WHERE idClient = '" + client + "';";
 
 		// insert some messages
 		db.sql(sqlStatement.c_str());
@@ -159,7 +165,7 @@ std::vector<Message> MySqlDatabaseGateway::getAllMessagesReceivedByUser(const st
 		std::string sqlStatement;
 		// TODO: Create the SQL statement to query all messages for the given user (SELECT)
 
-		sqlStatement = "SELECT * FROM martimy.Messages WHERE Receiver = '" + username + "';";
+		sqlStatement = "SELECT * FROM " + std::string(bufMySqlDatabase) + ".Messages WHERE Receiver = '" + username + "';";
 
 		// consult all messages
 		DBResultSet res = db.sql(sqlStatement.c_str());
@@ -168,8 +174,8 @@ std::vector<Message> MySqlDatabaseGateway::getAllMessagesReceivedByUser(const st
 		for (auto & messageRow : res.rows)
 		{
 			Message message;
-			message.senderUsername = messageRow.columns[0];
-			message.receiverUsername = messageRow.columns[1];
+			message.receiverUsername = messageRow.columns[0];
+			message.senderUsername = messageRow.columns[1];			
 			message.subject = messageRow.columns[2];
 			message.body = messageRow.columns[3];
 			messages.push_back(message);

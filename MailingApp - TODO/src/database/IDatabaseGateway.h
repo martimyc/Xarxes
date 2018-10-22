@@ -9,13 +9,10 @@ public:
 
 	struct Client {
 		std::string name;
-		std::string blocked[5];
+		std::vector<std::string> blocked;
 
-		Client(const std::string str): name(str)
-		{
-			for (int i = 5; i < 5; i++)
-				blocked[i] = "null";
-		}
+		Client(const std::string str) : name(str)
+		{}
 	};
 
 	// Constructor and destructor

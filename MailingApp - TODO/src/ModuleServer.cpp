@@ -108,10 +108,10 @@ void ModuleServer::onPacketReceivedLogin(SOCKET socket, const InputMemoryStream 
 		database()->insertClient(loginName);
 	else
 	{
-		for (int i = 0; i < 5; i++)
+		for (std::vector<std::string>::const_iterator it = user.blocked.begin(); it != user.blocked.end(); ++it)
 		{
-			if(user.blocked[i] != "null")
-				client.blocked.push_back(user.blocked[i]);
+			if (*it != "null")
+				client.blocked.push_back(*it);
 		}
 	}
 
