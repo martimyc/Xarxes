@@ -34,21 +34,13 @@ void SimulatedDatabaseGateway::insertClient(const std::string client)
 
 void SimulatedDatabaseGateway::blockClient(const std::string client, const std::string blocked)
 {
+	if (blocked == "null")
+		return;
+
 	for (std::vector<IDatabaseGateway::Client>::iterator it = allClients.begin(); it != allClients.end(); ++it)
 	{
 		if (it->name == client)
-		{
-			for (int i = 0; i < 5; i++)
-			{
-				if (it->blocked[i] == "null")
-				{
-					it->blocked[i] = blocked;
-					break;
-				}
-				else if(i == 4)
-					printf("Allready blocked 5 Clients");
-			}
-		}
+			it->blocked.push_back(blocked);
 	}
 }
 
@@ -58,11 +50,11 @@ void SimulatedDatabaseGateway::unblockClient(const std::string client, const std
 	{
 		if (it->name == client)
 		{
-			for (int i = 0; i < 5; i++)
+			for (std::vector<std::string>::iterator it2 = it->blocked.begin(); it2 != it->blocked.end(); ++it2)
 			{
-				if (it->blocked[i] == unblocked)
+				if (*it2 == unblocked)
 				{
-					it->blocked[i] = "null";
+					it->blocked.erase(it2);
 					break;
 				}
 			}
