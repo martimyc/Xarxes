@@ -339,13 +339,16 @@ void ModuleClient::updateGUI()
 
 				ImGui::SameLine();
 
+				ImGui::PushID(it->c_str());
 				if (ImGui::Button("Unblock"))
 				{
 					messengerState = MessengerState::Unblocking;
 					unblocked = *it;
 					blocked.erase(it);
+					ImGui::PopID();
 					break;
 				}
+				ImGui::PopID();
 			}
 		}
 	}

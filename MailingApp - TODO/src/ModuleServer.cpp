@@ -237,7 +237,7 @@ void ModuleServer::onPacketReceivedUnblocked(SOCKET socket, const InputMemoryStr
 	{
 		if (it->loginName == user)
 		{
-			for (std::vector<std::string>::iterator it2 = it->blocked.begin(); it2 != it->blocked.end(); ++it)
+			for (std::vector<std::string>::iterator it2 = it->blocked.begin(); it2 != it->blocked.end(); ++it2)
 			{
 				if (*it2 == unblocked_user)
 				{

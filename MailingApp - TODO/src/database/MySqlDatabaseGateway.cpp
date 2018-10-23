@@ -50,8 +50,23 @@ IDatabaseGateway::Client MySqlDatabaseGateway::getClientInfo(const std::string c
 			if (blocked_list != "null")
 			{
 				//Split string into substringd for each blocked.
-				for (size_t end_pos = blocked_list.find_first_of(","), start_pos = 0; start_pos != std::string::npos; (end_pos == std::string::npos ? start_pos = std::string::npos : start_pos = end_pos + 1), end_pos = blocked_list.substr(start_pos + 1).find_first_of(","))
-					query_client.blocked.push_back(blocked_list.substr(start_pos, end_pos));
+				size_t len = blocked_list.find_first_of(","), start_pos = 0;
+
+				while (start_pos != std::string::npos)
+				{
+					if(len == std::string::npos)
+						query_client.blocked.push_back(blocked_list.substr(start_pos));
+					else
+						query_client.blocked.push_back(blocked_list.substr(start_pos, len));
+
+					 if (len == std::string::npos)
+						 start_pos = std::string::npos;
+					 else
+					 {
+						 start_pos += len + 1;
+						 len = blocked_list.substr(start_pos).find_first_of(",");
+					 }					
+				}
 			}
 		}
 	}
@@ -140,11 +155,37 @@ void MySqlDatabaseGateway::unblockClient(const std::string client, const std::st
 		std::string new_list;
 
 		//Split string into substringd for each blocked.
-		for (size_t end_pos = blocked_list.find_first_of(","), start_pos = 0; start_pos != std::string::npos; (end_pos == std::string::npos ? start_pos = std::string::npos : start_pos = end_pos + 1), end_pos = blocked_list.substr(start_pos + 1).find_first_of(","))
+		size_t len = blocked_list.find_first_of(","), start_pos = 0;
+
+		while (start_pos != std::string::npos)
 		{
-			std::string str(blocked_list.substr(start_pos, end_pos));
-			if(str != unblocked)
-				new_list += str;
+			std::string str;
+
+			if (len == std::string::npos)
+			{
+				str = blocked_list.substr(start_pos);
+				
+				if (str != unblocked)
+					new_list += str;
+			}
+			else
+			{
+				str = blocked_list.substr(start_pos, len);
+				
+				if (str != unblocked)
+				{
+					new_list += str;
+					new_list += ",";
+				}				
+			}			
+
+			if (len == std::string::npos)
+				start_pos = std::string::npos;
+			else
+			{
+				start_pos += len + 1;
+				len = blocked_list.substr(start_pos).find_first_of(",");
+			}
 		}
 
 		sqlStatement = "UPDATE " + std::string(bufMySqlDatabase) + ".Clients SET Blocked = '" + new_list + "' WHERE idClient = '" + client + "';";
