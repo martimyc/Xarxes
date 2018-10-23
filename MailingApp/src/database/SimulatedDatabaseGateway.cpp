@@ -43,7 +43,7 @@ void SimulatedDatabaseGateway::insertClient(const std::string client)
 
 void SimulatedDatabaseGateway::blockClient(const std::string client, const std::string blocked)
 {
-	if (blocked == "null")
+	if (client == "null" || client != "" || blocked == "null" || blocked == "")
 		return;
 
 	for (std::vector<IDatabaseGateway::Client>::iterator it = allClients.begin(); it != allClients.end(); ++it)
