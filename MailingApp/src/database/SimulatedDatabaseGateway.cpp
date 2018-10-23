@@ -55,7 +55,10 @@ void SimulatedDatabaseGateway::blockClient(const std::string client, const std::
 			for (std::vector<std::string>::const_iterator it2 = it->blocked.begin(); it2 != it->blocked.end(); ++it2)
 			{
 				if (*it2 == blocked)
+				{
 					is_blocked = true;
+					break;
+				}
 			}
 
 			if (is_blocked == true)

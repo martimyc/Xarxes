@@ -125,16 +125,7 @@ void MySqlDatabaseGateway::blockClient(const std::string client, const std::stri
 
 		std::string blocked_list(res.rows[0].columns[1]);
 
-		bool is_blocked = false;
-
-		for (auto r : res.rows)
-		{
-			for (auto c : r.columns)
-			{
-				if (c == blocked)
-					is_blocked = true;
-			}
-		}
+		bool is_blocked = blocked_list.find(blocked) != std::string::npos;		
 
 		if (is_blocked == true)
 		{
