@@ -283,22 +283,25 @@ void ModuleClient::updateGUI()
 
 		if (ImGui::Button("Block"))
 		{
-			bool is_blocked = false;
-
-			for (std::vector<std::string>::const_iterator it = blocked.begin(); it != blocked.end(); ++it)
+			if (blockInputBuffer == "null" && blockInputBuffer == "")
 			{
-				if (*it == blockInputBuffer)
+				bool is_blocked = false;
+
+				for (std::vector<std::string>::const_iterator it = blocked.begin(); it != blocked.end(); ++it)
 				{
-					is_blocked = true;
-					printf("User already blocked");
-					break;
+					if (*it == blockInputBuffer)
+					{
+						is_blocked = true;
+						printf("User already blocked");
+						break;
+					}
 				}
-			}
 
-			if (!is_blocked)
-			{
-				blocked.push_back(std::string(blockInputBuffer));
-				messengerState = MessengerState::Blocking;
+				if (!is_blocked)
+				{
+					blocked.push_back(std::string(blockInputBuffer));
+					messengerState = MessengerState::Blocking;
+				}
 			}
 		}
 
