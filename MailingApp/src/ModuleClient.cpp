@@ -283,7 +283,7 @@ void ModuleClient::updateGUI()
 
 		if (ImGui::Button("Block"))
 		{
-			if (blockInputBuffer != "null" && blockInputBuffer != "")
+			if (std::string(blockInputBuffer) != "null" && std::string(blockInputBuffer) != "")
 			{
 				bool is_blocked = false;
 
