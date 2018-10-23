@@ -124,6 +124,23 @@ void MySqlDatabaseGateway::blockClient(const std::string client, const std::stri
 		DBResultSet res = db.sql(sqlStatement.c_str());
 
 		std::string blocked_list(res.rows[0].columns[1]);
+
+		bool is_blocked = false;
+
+		for (auto r : res.rows)
+		{
+			for (auto c : r.columns)
+			{
+				if (c == blocked)
+					is_blocked = true;
+			}
+		}
+
+		if (is_blocked == true)
+		{
+			printf("Usear already blocked");
+			return;
+		}
 		
 		if(blocked_list != "null")
 			sqlStatement = "UPDATE " + std::string(bufMySqlDatabase) + ".Clients SET Blocked = '" + blocked_list + "," + blocked + "' WHERE idClient = '" + client + "';";

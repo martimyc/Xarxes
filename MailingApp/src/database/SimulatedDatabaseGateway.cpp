@@ -29,6 +29,15 @@ void SimulatedDatabaseGateway::insertMessage(const Message & message)
 
 void SimulatedDatabaseGateway::insertClient(const std::string client)
 {
+	for (std::vector<IDatabaseGateway::Client>::iterator it = allClients.begin(); it != allClients.end(); ++it)
+	{
+		if (it->name == client)
+		{
+			printf("Client already added");
+			return;
+		}
+	}
+
 	allClients.push_back(client);
 }
 
@@ -40,7 +49,23 @@ void SimulatedDatabaseGateway::blockClient(const std::string client, const std::
 	for (std::vector<IDatabaseGateway::Client>::iterator it = allClients.begin(); it != allClients.end(); ++it)
 	{
 		if (it->name == client)
+		{
+			bool is_blocked = false;
+
+			for (std::vector<std::string>::const_iterator it2 = it->blocked.begin(); it2 != it->blocked.end(); ++it2)
+			{
+				if (*it2 == blocked)
+					is_blocked = true;
+			}
+
+			if (is_blocked == true)
+			{
+				printf("Usear already blocked");
+				return;
+			}
+
 			it->blocked.push_back(blocked);
+		}
 	}
 }
 
